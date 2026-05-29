@@ -1,0 +1,7 @@
+{
+  "name": "@allyvate/infra",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SST v3 infrastructure stacks (VPC, Postgres/Neon, Redis, ECS, ALB). Stub in Week 1."
+}

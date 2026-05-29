@@ -1,0 +1,5 @@
+{
+  "//": "Editor-only root config. Each package owns its own tsconfig; CI runs `tsc --noEmit` per package via `turbo run typecheck`.",
+  "extends": "./tsconfig.base.json",
+  "files": []
+}
