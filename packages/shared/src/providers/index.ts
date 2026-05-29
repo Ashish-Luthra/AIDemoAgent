@@ -6,6 +6,9 @@
  * (interfaces only) in Phase 1 — voice is the Phase 2 wrapper.
  */
 
+/** Runtime registry that makes any `LlmProvider` implementation swappable by config. */
+export * from './llm-registry.js';
+
 /** LLM — Anthropic Claude. Structured output is mandatory (Zod-validated). */
 export interface LlmProvider {
   /** Single non-streaming structured call (ingestion classifier path). */
