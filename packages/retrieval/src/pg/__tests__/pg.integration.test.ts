@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { eq } from 'drizzle-orm';
 import { createDb, edges, knowledgeObjects, nodes, tenants, type Database } from '@allyvate/db';
@@ -22,6 +22,11 @@ function unit(i: number): number[] {
 const vecLiteral = (v: number[]): string => `[${v.join(',')}]`;
 
 describe.skipIf(!DATABASE_URL)('pg retrieval arms (integration)', () => {
+  // These hit a real Postgres over the network (Neon) where multi-arm queries +
+  // compute cold-start exceed vitest's 5s default. Local/CI-container runs are
+  // well under this; the headroom only matters against a remote DB.
+  vi.setConfig({ testTimeout: 30000, hookTimeout: 40000 });
+
   let db: Database;
   let client: ReturnType<typeof createDb>['client'];
   let tenantId: string;
