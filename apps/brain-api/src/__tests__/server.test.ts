@@ -1,10 +1,40 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import type { LlmProvider } from '@allyvate/shared/providers';
+import type { RetrievalDeps } from '@allyvate/retrieval';
 import { buildServer } from '../server.js';
 
 let app: FastifyInstance;
 let appWithLlm: FastifyInstance;
+let appWithRetrieval: FastifyInstance;
+
+const ARTIFACT_ID = '11111111-1111-1111-1111-111111111111';
+
+/** In-memory retrieval deps so /retrieve can be tested without a database. */
+const fakeRetrieval: RetrievalDeps = {
+  arms: [{ name: 'vector', search: async () => ({ ids: [ARTIFACT_ID] }) }],
+  features: {
+    features: async (_t, ids) =>
+      new Map(
+        ids
+          .filter((id) => id === ARTIFACT_ID)
+          .map((id) => [
+            id,
+            {
+              artifactId: id,
+              subtype: 'CaseStudy' as const,
+              title: 'Match Booster case study',
+              personaTags: [],
+              objectionTags: [],
+              historicalSuccess: 1,
+              opportunityStageFit: 0.5,
+              freshness: 1,
+              approval: 1,
+            },
+          ]),
+      ),
+  },
+};
 
 /** A fake provider returning a valid ClassifierOutput so /classify can be tested offline. */
 const fakeLlm: LlmProvider = {
@@ -28,11 +58,12 @@ const fakeLlm: LlmProvider = {
 beforeAll(async () => {
   app = buildServer({ logger: false });
   appWithLlm = buildServer({ logger: false, llm: fakeLlm });
-  await Promise.all([app.ready(), appWithLlm.ready()]);
+  appWithRetrieval = buildServer({ logger: false, retrieval: fakeRetrieval });
+  await Promise.all([app.ready(), appWithLlm.ready(), appWithRetrieval.ready()]);
 });
 
 afterAll(async () => {
-  await Promise.all([app.close(), appWithLlm.close()]);
+  await Promise.all([app.close(), appWithLlm.close(), appWithRetrieval.close()]);
 });
 
 describe('brain-api', () => {
@@ -47,7 +78,7 @@ describe('brain-api', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it('returns the retrieval contract shape for a valid query', async () => {
+  it('returns the retrieval contract shape (stub) when no index is wired', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/retrieve',
@@ -59,6 +90,20 @@ describe('brain-api', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toHaveProperty('reasoningTrace');
     expect(res.json()).toHaveProperty('alternatives');
+  });
+
+  it('runs the RIE through /retrieve when retrieval deps are wired', async () => {
+    const res = await appWithRetrieval.inject({
+      method: 'POST',
+      url: '/retrieve',
+      payload: {
+        tenantId: '00000000-0000-0000-0000-000000000000',
+        question: 'What is Match Booster?',
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ topArtifactId: ARTIFACT_ID });
+    expect(res.json().confidence).toBeGreaterThan(0);
   });
 
   it('returns 503 from /classify when no LLM is configured', async () => {

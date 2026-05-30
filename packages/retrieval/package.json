@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./pg": "./src/pg/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -13,7 +14,8 @@
   },
   "dependencies": {
     "@allyvate/db": "workspace:*",
-    "@allyvate/shared": "workspace:*"
+    "@allyvate/shared": "workspace:*",
+    "drizzle-orm": "^0.36.4"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
