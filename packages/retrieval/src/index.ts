@@ -1,4 +1,6 @@
 export * from './rrf.js';
+export * from './scoring.js';
+export * from './rie.js';
 
-/** Package marker — full 3-stage RIE + Outcome Reinforcement Engine land Weeks 4–5. */
+/** Package marker — Outcome Reinforcement Engine lands Week 5. */
 export const PACKAGE = '@allyvate/retrieval';
