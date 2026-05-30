@@ -41,6 +41,12 @@ importers:
       '@allyvate/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@allyvate/ingestion':
+        specifier: workspace:*
+        version: link:../../packages/ingestion
+      '@allyvate/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers
       '@allyvate/retrieval':
         specifier: workspace:*
         version: link:../../packages/retrieval
@@ -50,6 +56,9 @@ importers:
       fastify:
         specifier: ^5.1.0
         version: 5.8.5
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^22.9.0
