@@ -32,7 +32,14 @@ import type {
   KnowledgeObjectSubtype,
   NodeType,
 } from '@allyvate/shared';
-import { DEFAULT_MODELS } from '@allyvate/shared';
+
+/**
+ * Mirror of `DEFAULT_MODELS.textEmbeddingDimensions` (@allyvate/shared) — kept as
+ * a local literal so drizzle-kit can load this schema without resolving the
+ * shared package's runtime exports. The schema-invariants test asserts the two
+ * stay in sync. 1536 keeps us under pgvector's HNSW 2000-dim ceiling.
+ */
+const TEXT_EMBEDDING_DIMENSIONS = 1536;
 
 type IngestionSource = 'website' | 'confluence' | 'gdrive' | 'hubspot' | 'salesforce' | 'manual';
 type IngestionStatus = 'queued' | 'running' | 'succeeded' | 'failed';
@@ -167,9 +174,9 @@ export const embeddings = pgTable(
       .references(() => knowledgeObjects.id, { onDelete: 'cascade' }),
     modality: text('modality').$type<'text' | 'image'>().notNull().default('text'),
     // 1536 dims keeps us inside pgvector's HNSW 2000-dim ceiling — see
-    // DEFAULT_MODELS.textEmbeddingDimensions for the rationale.
+    // TEXT_EMBEDDING_DIMENSIONS (mirrors DEFAULT_MODELS.textEmbeddingDimensions).
     embedding: vector('embedding', {
-      dimensions: DEFAULT_MODELS.textEmbeddingDimensions,
+      dimensions: TEXT_EMBEDDING_DIMENSIONS,
     }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

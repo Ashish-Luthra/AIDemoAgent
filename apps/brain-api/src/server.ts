@@ -3,12 +3,13 @@ import { z } from 'zod';
 import { RetrievalQuery, type RetrievalResult } from '@allyvate/shared';
 import type { LlmProvider } from '@allyvate/shared/providers';
 import { ClassificationError, classifyDocument } from '@allyvate/ingestion';
+import { runRetrieval, type RetrievalDeps } from '@allyvate/retrieval';
 
 /**
  * Brain API (KICKOFF: ingestion + retrieval HTTP/WS endpoints). Ships a health
- * check, the validated `/retrieve` contract (RIE wires in at Week 4), and a
- * `/classify` endpoint that runs the ingestion classifier against the configured
- * LLM provider — the first end-to-end path through the swap point.
+ * check, `/retrieve` (the Retrieval Intelligence Engine when retrieval deps are
+ * wired; otherwise the contract stub), and `/classify` (the ingestion classifier
+ * against the configured LLM provider).
  */
 
 /** Request body for `/classify`. */
@@ -22,6 +23,8 @@ export interface BuildServerOptions {
   logger?: boolean;
   /** LLM provider backing `/classify`. When absent, `/classify` returns 503. */
   llm?: LlmProvider;
+  /** Retrieval Intelligence Engine deps backing `/retrieve`. Absent → contract stub. */
+  retrieval?: RetrievalDeps;
 }
 
 export function buildServer(opts: BuildServerOptions = {}): FastifyInstance {
@@ -36,11 +39,15 @@ export function buildServer(opts: BuildServerOptions = {}): FastifyInstance {
       return { error: parsed.error.flatten() };
     }
 
-    // Stub contract — returns the shape the RIE will fill in (Week 4).
+    if (opts.retrieval) {
+      return runRetrieval(parsed.data, opts.retrieval);
+    }
+
+    // No retrieval index wired (e.g. no DATABASE_URL) — return the contract stub.
     const result: RetrievalResult = {
       topArtifactId: null,
       confidence: 0,
-      reasoningTrace: 'Retrieval Intelligence Engine not yet implemented (Week 4).',
+      reasoningTrace: 'Retrieval index not configured (set DATABASE_URL).',
       alternatives: [],
     };
     return result;

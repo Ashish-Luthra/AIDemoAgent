@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_MODELS } from '@allyvate/shared';
 
 /**
  * Architectural-lock guard (KICKOFF lock #6): every domain table MUST carry a
@@ -41,5 +42,13 @@ describe('schema invariants', () => {
     expect(tenantRlsPolicies).toHaveLength(8);
     // tenants gets its own self-isolation policy.
     expect(schemaSource).toMatch(/tenant_self_isolation/);
+  });
+
+  it('keeps the embeddings vector dimension in sync with DEFAULT_MODELS', () => {
+    // schema.ts mirrors the dimension as a local literal (so drizzle-kit can load
+    // it without the shared runtime); this guard prevents the two from drifting.
+    const match = schemaSource.match(/const TEXT_EMBEDDING_DIMENSIONS = (\d+)/);
+    expect(match).not.toBeNull();
+    expect(Number(match![1])).toBe(DEFAULT_MODELS.textEmbeddingDimensions);
   });
 });
