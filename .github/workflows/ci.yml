@@ -13,6 +13,28 @@ jobs:
   verify:
     name: lint · typecheck · test
     runs-on: ubuntu-latest
+
+    # Ephemeral Postgres with pgvector so the retrieval integration tests
+    # (describe.skipIf(!DATABASE_URL)) actually run in CI. pg_trgm ships in the
+    # base postgres image; the vector extension ships in pgvector/pgvector.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: allyvate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/allyvate
+
     steps:
       - uses: actions/checkout@v4
 
@@ -34,7 +56,12 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
-      # Includes the multi-tenant guard: schema-invariants.test.ts fails CI if any
-      # domain table loses its tenant_id column or RLS policy (KICKOFF lock #6).
+      # Creates pgvector + pg_trgm extensions and applies migrations, so the
+      # retrieval integration tests have a schema to run against.
+      - name: Migrate database
+        run: pnpm run db:migrate
+
+      # Includes the multi-tenant guard (schema-invariants.test.ts) and the
+      # DATABASE_URL-gated retrieval integration tests (pgvector / BM25 / graph).
       - name: Test
         run: pnpm run test
